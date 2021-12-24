@@ -54,56 +54,22 @@ public class Downloader {
 
         var extension = FilenameUtils.getExtension(url.getPath()); // -> xml
 
-        var directoryPath = !extension.isEmpty() ? url.getPath().substring(0, url.getPath().lastIndexOf("/")) : url.getPath();
-        var fileName = !extension.isEmpty() ? FilenameUtils.getName(url.getPath()) : "index.html";
+        var directoryPath = getDirectoryPath(url, extension);
+        var fileName = getFileName(url, extension);
 
+        createDirectory(directoryPath);
 
-        File directory = new File(this.saveDir + File.separator + directoryPath + File.separator );
-
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-        File file = new File(this.saveDir + File.separator + directoryPath + File.separator + fileName);
+        File file = getNewFileToSave(directoryPath, fileName);
 
         try {
-
-            // Create URL object
             HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
-            int responseCode = httpConn.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                String contentType = httpConn.getContentType();
+            if (httpConn.getResponseCode() == HttpURLConnection.HTTP_OK) {
 
-                if (contentType.contains("text/html")) {
-                    BufferedReader readr =
-                            new BufferedReader(new InputStreamReader(url.openStream()));
-
-                    // Enter filename in which you want to download
-                    BufferedWriter writer =
-                            new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
-
-                    // read each line from stream till end
-                    String line;
-                    StringBuilder sb = new StringBuilder();
-                    while ((line = readr.readLine()) != null) {
-                        sb.append(line);
-                        writer.write(line);
-                    }
-                    readr.close();
-                    writer.close();
+                if (httpConn.getContentType().contains("text/html")) {
+                    StringBuilder sb = downloadHtmlFile(url, file);
                     set = parseHtmlFileForTags(sb);
                 } else {
-                    InputStream inputStream = httpConn.getInputStream();
-                    FileOutputStream outputStream = new FileOutputStream(file.getAbsoluteFile());
-
-
-                    // read each line from stream till end
-                    int bytesRead = -1;
-                    byte[] buffer = new byte[BUFFER_SIZE];
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
-                    }
-                    outputStream.close();
-                    inputStream.close();
+                    downloadNonHtmlFile(file, httpConn);
                 }
                 System.out.println("Successfully Downloaded.");
             }
@@ -118,6 +84,59 @@ public class Downloader {
         }
 
         return set;
+    }
+
+    private void downloadNonHtmlFile(File file, HttpURLConnection httpConn) throws IOException {
+        InputStream inputStream = httpConn.getInputStream();
+        FileOutputStream outputStream = new FileOutputStream(file.getAbsoluteFile());
+        // read each line from stream till end
+        int bytesRead = -1;
+        byte[] buffer = new byte[BUFFER_SIZE];
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, bytesRead);
+        }
+        outputStream.close();
+        inputStream.close();
+    }
+
+    private StringBuilder downloadHtmlFile(URL url, File file) throws IOException {
+        BufferedReader readr =
+                new BufferedReader(new InputStreamReader(url.openStream()));
+
+        // Enter filename in which you want to download
+        BufferedWriter writer =
+                new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
+
+        // read each line from stream till end
+        String line;
+        StringBuilder sb = new StringBuilder();
+        while ((line = readr.readLine()) != null) {
+            sb.append(line);
+            writer.write(line);
+        }
+        readr.close();
+        writer.close();
+        return sb;
+    }
+
+    private File getNewFileToSave(String directoryPath, String fileName) {
+        return new File(this.saveDir + File.separator + directoryPath + File.separator + fileName);
+    }
+
+    private void createDirectory(String directoryPath) {
+        File directory = new File(this.saveDir + File.separator + directoryPath + File.separator );
+
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+    }
+
+    private String getFileName(URL url, String extension) {
+        return !extension.isEmpty() ? FilenameUtils.getName(url.getPath()) : "index.html";
+    }
+
+    private String getDirectoryPath(URL url, String extension) {
+        return !extension.isEmpty() ? url.getPath().substring(0, url.getPath().lastIndexOf("/")) : url.getPath();
     }
 
     private Set<String> parseHtmlFileForTags(StringBuilder sb) {
