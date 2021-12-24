@@ -1,5 +1,8 @@
 package com.dulitha;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -8,8 +11,7 @@ import java.util.Set;
 
 public class DownloadSite {
 
-    public static void DownloadWebPage(String webpage)
-    {
+    public static void DownloadWebPage(String webpage) {
         Set<String> set = new HashSet<>();
 
         String PATH = "/Users/erandikiriweldeniya/Documents/Dulitha/Professional/tretton37/tretton37_website/";
@@ -17,7 +19,7 @@ public class DownloadSite {
         String fileName = "index.html";
 
         File directory = new File(directoryName);
-        if (! directory.exists()){
+        if (!directory.exists()) {
             directory.mkdirs();
         }
 
@@ -36,7 +38,9 @@ public class DownloadSite {
 
             // read each line from stream till end
             String line;
+            StringBuilder sb = new StringBuilder();
             while ((line = readr.readLine()) != null) {
+                sb.append(line);
                 writer.write(line);
             }
 
@@ -48,14 +52,20 @@ public class DownloadSite {
         // Exceptions
         catch (MalformedURLException mue) {
             System.out.println("Malformed URL Exception raised");
-        }
-        catch (IOException ie) {
+        } catch (IOException ie) {
             System.out.println("IOException raised");
         }
     }
 
-    public static void main(String args[]){
+    public static void main(String args[]) {
         String url = "https://tretton37.com/";
-        DownloadWebPage(url);
+        String saveDir = "/Users/erandikiriweldeniya/Documents/Dulitha/Professional/tretton37/tretton37_website/";
+        //DownloadWebPage(url);
+
+//        try {
+            Downloader downloader = new Downloader(url, saveDir);
+//            downloader.downloadFile(url, saveDir);
+//        } catch (IOException ex) {
+//        }
     }
 }
