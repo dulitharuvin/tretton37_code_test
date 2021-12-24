@@ -1,5 +1,6 @@
 package com.dulitha;
 
+import org.apache.commons.io.FilenameUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -12,12 +13,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-
 public class Downloader {
 
     private String hostName;
     private String saveDir;
-    private static Set<String> urlSet = new HashSet<>();
+    private static Set<String> globalUrlSet = new HashSet<>();
 
 
     private static final int BUFFER_SIZE = 4096;
@@ -52,16 +52,18 @@ public class Downloader {
     private Set<String> downloadResource(URL url) {
         Set<String> set = new HashSet<>();
 
-        var directoryPath = url.getPath().substring(0, url.getPath().lastIndexOf("/")) + File.separator;
-        var fileName = url.getFile().substring( url.getFile().lastIndexOf('/')+1 );
+        var extension = FilenameUtils.getExtension(url.getPath()); // -> xml
 
-        File directory = new File(this.saveDir + File.separator + directoryPath);
+        var directoryPath = !extension.isEmpty() ? url.getPath().substring(0, url.getPath().lastIndexOf("/")) : url.getPath();
+        var fileName = !extension.isEmpty() ? FilenameUtils.getName(url.getPath()) : "index.html";
+
+
+        File directory = new File(this.saveDir + File.separator + directoryPath + File.separator );
 
         if (!directory.exists()) {
             directory.mkdirs();
         }
-        fileName = fileName.equals("") ? "index.html" : fileName;
-        File file = new File(this.saveDir + File.separator + directoryPath + fileName);
+        File file = new File(this.saveDir + File.separator + directoryPath + File.separator + fileName);
 
         try {
 
@@ -127,12 +129,18 @@ public class Downloader {
         Elements anchorTags = document.select("a");
 
         anchorTags.stream().map((link) -> link.attr("href")).forEachOrdered((this_url) -> {
-            if (!this_url.isEmpty()) {
+            if (!this_url.isEmpty() && this_url.indexOf("mailto") == -1 && this_url.indexOf("tel:") == -1) {
                 if (isAbsoluteUrl(this_url)) {
                     if (this_url.indexOf(this.hostName) != -1)
-                        urlSet.add(this_url);
+                        if(!this.globalUrlSet.contains(this_url)){
+                            urlSet.add(this_url);
+                            this.globalUrlSet.add(this_url);
+                        }
                 } else {
-                    urlSet.add(this.getAbsoluteUrl(this_url));
+                    if(!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))){
+                        urlSet.add(this.getAbsoluteUrl(this_url));
+                        this.globalUrlSet.add(this.getAbsoluteUrl(this_url));
+                    }
                 }
             }
         });
@@ -141,9 +149,15 @@ public class Downloader {
             if (!this_url.isEmpty()) {
                 if (isAbsoluteUrl(this_url)) {
                     if (this_url.indexOf(this.hostName) != -1)
-                        urlSet.add(this_url);
+                        if(!this.globalUrlSet.contains(this_url)){
+                            urlSet.add(this_url);
+                            this.globalUrlSet.add(this_url);
+                        }
                 } else {
-                    urlSet.add(this.getAbsoluteUrl(this_url));
+                    if(!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))){
+                        urlSet.add(this.getAbsoluteUrl(this_url));
+                        this.globalUrlSet.add(this.getAbsoluteUrl(this_url));
+                    }
                 }
             }
         });
