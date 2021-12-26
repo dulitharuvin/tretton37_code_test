@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 public class DownloadSite {
 
+    private static final int MAX_THREADS_FOR_DOWNLOADS = 5;
+
     public static void main(String args[]) {
         String url = "https://tretton37.com/";
         String saveDir = "/Users/erandikiriweldeniya/Documents/Dulitha/Professional/tretton37/tretton37_website/";
@@ -20,7 +22,7 @@ public class DownloadSite {
     }
 
     private static void downloadRunner( Downloader downloader, Set<String> paths) {
-        ExecutorService executor = Executors.newFixedThreadPool(5);
+        ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS_FOR_DOWNLOADS);
         try {
 
             var downloadTasks = paths

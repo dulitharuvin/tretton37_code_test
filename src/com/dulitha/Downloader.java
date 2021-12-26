@@ -19,8 +19,8 @@ public class Downloader {
     private String saveDir;
     private static Set<String> globalUrlSet = new HashSet<>();
 
-
     private static final int BUFFER_SIZE = 4096;
+    private static final String HTML_TEXT_CONTENT_TYPE = "text/html";
 
 
     public Downloader(String hostName, String saveDir) {
@@ -60,7 +60,7 @@ public class Downloader {
             HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
             if (httpConn.getResponseCode() == HttpURLConnection.HTTP_OK) {
 
-                if (httpConn.getContentType().contains("text/html")) {
+                if (httpConn.getContentType().contains(HTML_TEXT_CONTENT_TYPE)) {
                     StringBuilder sb = downloadHtmlFile(url, file);
                     set = parseHtmlFileForTags(sb);
                 } else {
