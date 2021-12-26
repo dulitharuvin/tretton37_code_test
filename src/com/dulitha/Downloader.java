@@ -26,21 +26,16 @@ public class Downloader {
     public Downloader(String hostName, String saveDir) {
         this.hostName = hostName;
         this.saveDir = saveDir;
-        this.startDownload(this.hostName);
     }
 
-    private void startDownload(String urlString) {
+    public Set<String> startDownload(String urlString) {
         try {
             URL url = new URL(urlString);
-
-            var urlList = downloadAndGetUrlList(url);
-
-            for (var urlItem : urlList) {
-                startDownload(urlItem);
-            }
+            return downloadAndGetUrlList(url);
         } catch (IOException ie) {
             System.out.println("IO Exception occur");
         }
+        return new HashSet<>();
     }
 
     private Set<String> downloadAndGetUrlList(URL url) {
@@ -86,17 +81,22 @@ public class Downloader {
         return set;
     }
 
-    private void downloadNonHtmlFile(File file, HttpURLConnection httpConn) throws IOException {
-        InputStream inputStream = httpConn.getInputStream();
-        FileOutputStream outputStream = new FileOutputStream(file.getAbsoluteFile());
-        // read each line from stream till end
-        int bytesRead = -1;
-        byte[] buffer = new byte[BUFFER_SIZE];
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, bytesRead);
+    private void downloadNonHtmlFile(File file, HttpURLConnection httpConn) {
+        try {
+            InputStream inputStream = httpConn.getInputStream();
+            FileOutputStream outputStream = new FileOutputStream(file.getAbsoluteFile());
+            // read each line from stream till end
+            int bytesRead = -1;
+            byte[] buffer = new byte[BUFFER_SIZE];
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            outputStream.close();
+            inputStream.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        outputStream.close();
-        inputStream.close();
     }
 
     private StringBuilder downloadHtmlFile(URL url, File file) throws IOException {
@@ -124,7 +124,7 @@ public class Downloader {
     }
 
     private void createDirectory(String directoryPath) {
-        File directory = new File(this.saveDir + File.separator + directoryPath + File.separator );
+        File directory = new File(this.saveDir + File.separator + directoryPath + File.separator);
 
         if (!directory.exists()) {
             directory.mkdirs();
@@ -151,12 +151,12 @@ public class Downloader {
             if (!this_url.isEmpty() && this_url.indexOf("mailto") == -1 && this_url.indexOf("tel:") == -1) {
                 if (isAbsoluteUrl(this_url)) {
                     if (this_url.indexOf(this.hostName) != -1)
-                        if(!this.globalUrlSet.contains(this_url)){
+                        if (!this.globalUrlSet.contains(this_url)) {
                             urlSet.add(this_url);
                             this.globalUrlSet.add(this_url);
                         }
                 } else {
-                    if(!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))){
+                    if (!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))) {
                         urlSet.add(this.getAbsoluteUrl(this_url));
                         this.globalUrlSet.add(this.getAbsoluteUrl(this_url));
                     }
@@ -168,12 +168,12 @@ public class Downloader {
             if (!this_url.isEmpty()) {
                 if (isAbsoluteUrl(this_url)) {
                     if (this_url.indexOf(this.hostName) != -1)
-                        if(!this.globalUrlSet.contains(this_url)){
+                        if (!this.globalUrlSet.contains(this_url)) {
                             urlSet.add(this_url);
                             this.globalUrlSet.add(this_url);
                         }
                 } else {
-                    if(!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))){
+                    if (!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))) {
                         urlSet.add(this.getAbsoluteUrl(this_url));
                         this.globalUrlSet.add(this.getAbsoluteUrl(this_url));
                     }
