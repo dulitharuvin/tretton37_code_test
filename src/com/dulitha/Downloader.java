@@ -85,11 +85,21 @@ public class Downloader {
         try {
             InputStream inputStream = httpConn.getInputStream();
             FileOutputStream outputStream = new FileOutputStream(file.getAbsoluteFile());
+
+            long completeFileSize = httpConn.getContentLength();
+
             // read each line from stream till end
-            int bytesRead = -1;
-            byte[] buffer = new byte[BUFFER_SIZE];
+            long downloadedFileSize = 0;
+            char[] animationChars = new char[]{'|', '/', '-', '\\'};
+
+            int bytesRead = 0;
+            byte[] buffer = new byte[1024];
             while ((bytesRead = inputStream.read(buffer)) != -1) {
+                downloadedFileSize += bytesRead;
                 outputStream.write(buffer, 0, bytesRead);
+                // calculate progress
+                final int currentProgress = (int) ((((double)downloadedFileSize) / ((double)completeFileSize)) * 100d);
+                System.out.print("Processing: " + currentProgress + "% " + animationChars[currentProgress % 4] + "\r");
             }
             outputStream.close();
             inputStream.close();
@@ -141,7 +151,6 @@ public class Downloader {
 
     private Set<String> parseHtmlFileForTags(StringBuilder sb) {
         Set<String> urlSet = new HashSet<>();
-        Pattern pattern = Pattern.compile("^(?:[a-z]+:)?//");
 
         Document document = Jsoup.parse(sb.toString());
         Elements imageTags = document.select("img");
