@@ -1,5 +1,7 @@
 package com.dulitha;
 
+import com.dulitha.util.FileUtil;
+
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -13,15 +15,15 @@ public class DownloadSite {
     public static void main(String args[]) {
         String url = "https://tretton37.com/";
         String saveDir = "/Users/erandikiriweldeniya/Documents/Dulitha/Professional/tretton37/tretton37_website/";
+        FileUtil fileUtil = new FileUtil(saveDir);
 
-
-        Downloader downloader = new Downloader(url, saveDir);
+        Downloader downloader = new Downloader(url, saveDir, fileUtil);
         var paths = downloader.startDownload(url);
 
         downloadRunner(downloader, paths);
     }
 
-    private static void downloadRunner( Downloader downloader, Set<String> paths) {
+    private static void downloadRunner(Downloader downloader, Set<String> paths) {
         ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS_FOR_DOWNLOADS);
         try {
 
@@ -33,14 +35,14 @@ public class DownloadSite {
             // at this point, all requests are enqueued, and threads will be assigned as they become available
             executor.shutdown();    // stops accepting requests, does not interrupt threads,
             // items in queue will still get threads when available
-            downloadTasks.forEach((cmp) ->{
-                cmp.thenAccept(set -> downloadRunner(downloader,set));
+            downloadTasks.forEach((cmp) -> {
+                cmp.thenAccept(set -> downloadRunner(downloader, set));
             });
             // wait for all downloads to complete
             CompletableFuture.allOf(downloadTasks.toArray(new CompletableFuture[downloadTasks.size()])).join();
             // at this point, all downloads are finished,
             // so it's safe to shut down executor completely
-        } catch ( Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
             executor.shutdownNow(); // call this when done with the executor.
