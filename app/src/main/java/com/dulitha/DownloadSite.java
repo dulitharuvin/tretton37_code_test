@@ -2,6 +2,8 @@ package com.dulitha;
 
 import com.dulitha.util.FileUtil;
 
+import java.io.File;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -11,10 +13,11 @@ import java.util.stream.Collectors;
 public class DownloadSite {
 
     private static final int MAX_THREADS_FOR_DOWNLOADS = 5;
+    private static final String DEFAULT_DOWNLOAD_DIR = "tretton37_website";
 
     public static void main(String args[]) {
         String url = "https://tretton37.com/";
-        String saveDir = "/Users/erandikiriweldeniya/Documents/Dulitha/Professional/tretton37/tretton37_website";
+        String saveDir = getDownloadDirectory();
         FileUtil fileUtil = new FileUtil(saveDir);
 
         Downloader downloader = new Downloader(url, saveDir, fileUtil);
@@ -41,5 +44,17 @@ public class DownloadSite {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    private static String getDownloadDirectory(){
+        String currentDirectory = System.getProperty("user.dir");
+        Scanner userInput = new Scanner(System.in);
+        System.out.print("Enter directory to download tretton37.com : ");
+        String directoryToDownload = userInput.nextLine();
+
+        if(directoryToDownload.trim().isEmpty()){
+            return currentDirectory.substring(0, currentDirectory.lastIndexOf("/")) + File.separator + DEFAULT_DOWNLOAD_DIR;
+        }
+        return directoryToDownload.trim() + File.separator + DEFAULT_DOWNLOAD_DIR;
     }
 }
