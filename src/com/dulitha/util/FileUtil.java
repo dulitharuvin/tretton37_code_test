@@ -18,9 +18,10 @@ public class FileUtil {
         return this.saveDir + File.separator + this.getDirectoryPath() + File.separator + this.getFileName();
     }
 
-    private String getDirectoryPath() {
+    public String getDirectoryPath() {
         try {
-            return !this.getFileExtension().isEmpty() ? this.urlString.substring(0, this.urlString.lastIndexOf("/")) : this.urlString;
+            String dirPath = !this.getFileExtension().isEmpty() ? this.urlString.substring(0, this.urlString.lastIndexOf("/")) : this.urlString;
+            return dirPath.startsWith("/") ? dirPath.replaceFirst("/","") : dirPath;
         }catch (Exception e){
             return "/";
         }
