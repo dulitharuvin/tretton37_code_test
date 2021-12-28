@@ -113,26 +113,6 @@ public class Downloader {
         }
     }
 
-    /*private StringBuilder downloadHtmlFile(URL url, File file) throws IOException {
-        BufferedReader readr =
-                new BufferedReader(new InputStreamReader(url.openStream()));
-
-        // Enter filename in which you want to download
-        BufferedWriter writer =
-                new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
-
-        // read each line from stream till end
-        String line;
-        StringBuilder sb = new StringBuilder();
-        while ((line = readr.readLine()) != null) {
-            sb.append(line);
-            writer.write(line);
-        }
-        readr.close();
-        writer.close();
-        return sb;
-    }*/
-
     private StringBuilder downloadHtmlFile(URL url, File file) throws IOException {
         Document document = Jsoup.connect(url.toString()).get();
         StringBuilder sb = new StringBuilder(document.toString());
@@ -219,6 +199,7 @@ public class Downloader {
 
     private String modifyHtmlLinks(Document document) {
         Elements links = document.select("a[href]");
+        Elements imageLinks = document.select("img[src]");
 
         for (Element link : links) {
             var this_url = link.attr("href");
@@ -231,6 +212,20 @@ public class Downloader {
                 } else {
                     var modifiedUrl = this.fileUtil.getCompleteFileSavePath(this_url);
                     link.attr("href", modifiedUrl);
+                }
+            }
+        }
+        for (Element link : imageLinks) {
+            var this_url = link.attr("src");
+            if (!this_url.isEmpty() && this_url.indexOf("mailto") == -1 && this_url.indexOf("tel:") == -1) {
+                if (isAbsoluteUrl(this_url)) {
+                    if (this_url.indexOf(this.hostName) != -1) {
+                        var modifiedUrl = this.fileUtil.getCompleteFileSavePath(this_url);
+                        link.attr("src", modifiedUrl);
+                    }
+                } else {
+                    var modifiedUrl = this.fileUtil.getCompleteFileSavePath(this_url);
+                    link.attr("src", modifiedUrl);
                 }
             }
         }

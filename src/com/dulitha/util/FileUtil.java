@@ -19,7 +19,11 @@ public class FileUtil {
     }
 
     private String getDirectoryPath() {
-        return !this.getFileExtension().isEmpty() ? this.urlString.substring(0, this.urlString.lastIndexOf("/")) : this.urlString;
+        try {
+            return !this.getFileExtension().isEmpty() ? this.urlString.substring(0, this.urlString.lastIndexOf("/")) : this.urlString;
+        }catch (Exception e){
+            return "/";
+        }
     }
 
     private String getFileName() {
