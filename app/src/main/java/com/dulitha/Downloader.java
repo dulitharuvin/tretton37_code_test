@@ -67,7 +67,7 @@ public class Downloader {
                 } else {
                     downloadNonHtmlFile(file, httpConn);
                 }
-                System.out.println("Successfully Downloaded.");
+
             }
             httpConn.disconnect();
         }
@@ -89,20 +89,19 @@ public class Downloader {
 
             // read each line from stream till end
             long downloadedFileSize = 0;
-            char[] animationChars = new char[]{'|', '/', '-', '\\'};
 
             int bytesRead = 0;
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[4096];
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 downloadedFileSize += bytesRead;
                 outputStream.write(buffer, 0, bytesRead);
                 // calculate progress
                 final int currentProgress = (int) ((((double) downloadedFileSize) / ((double) completeFileSize)) * 100d);
-                System.out.print("Downloading: " + currentProgress + "% " + animationChars[currentProgress % 4] + "\r");
+                System.out.print("Downloading: " + file.getName()  + " :" + currentProgress + "% " + "\r");
             }
             outputStream.close();
             inputStream.close();
-
+            System.out.print("Downloading Completed" + "\r");
         } catch (IOException e) {
             e.printStackTrace();
         }
