@@ -1,8 +1,10 @@
 package com.dulitha;
 
+import com.dulitha.util.FileUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.*;
@@ -18,14 +20,16 @@ public class Downloader {
     private String hostName;
     private String saveDir;
     private static Set<String> globalUrlSet = new HashSet<>();
+    private FileUtil fileUtil;
 
     private static final int BUFFER_SIZE = 4096;
     private static final String HTML_TEXT_CONTENT_TYPE = "text/html";
 
 
-    public Downloader(String hostName, String saveDir) {
+    public Downloader(String hostName, String saveDir, FileUtil fileUtil) {
         this.hostName = hostName;
         this.saveDir = saveDir;
+        this.fileUtil = fileUtil;
     }
 
     public Set<String> startDownload(String urlString) {
@@ -39,15 +43,13 @@ public class Downloader {
     }
 
     private Set<String> downloadAndGetUrlList(URL url) {
-        Set<String> pageUrls = new HashSet<>();
-        pageUrls = downloadResource(url);
-        return pageUrls;
+        return downloadResource(url);
     }
 
     private Set<String> downloadResource(URL url) {
         Set<String> set = new HashSet<>();
 
-        var extension = FilenameUtils.getExtension(url.getPath()); // -> xml
+        var extension = FilenameUtils.getExtension(url.getPath());
 
         var directoryPath = getDirectoryPath(url, extension);
         var fileName = getFileName(url, extension);
@@ -61,8 +63,7 @@ public class Downloader {
             if (httpConn.getResponseCode() == HttpURLConnection.HTTP_OK) {
 
                 if (httpConn.getContentType().contains(HTML_TEXT_CONTENT_TYPE)) {
-                    StringBuilder sb = downloadHtmlFile(url, file);
-                    set = parseHtmlFileForTags(sb);
+                    set = downloadHtmlFileAndGetUrlSet(url, file);
                 } else {
                     downloadNonHtmlFile(file, httpConn);
                 }
@@ -70,8 +71,6 @@ public class Downloader {
             }
             httpConn.disconnect();
         }
-
-        // Exceptions
         catch (MalformedURLException mue) {
             System.out.println("Malformed URL Exception raised");
         } catch (IOException ie) {
@@ -85,11 +84,21 @@ public class Downloader {
         try {
             InputStream inputStream = httpConn.getInputStream();
             FileOutputStream outputStream = new FileOutputStream(file.getAbsoluteFile());
+
+            long completeFileSize = httpConn.getContentLength();
+
             // read each line from stream till end
-            int bytesRead = -1;
-            byte[] buffer = new byte[BUFFER_SIZE];
+            long downloadedFileSize = 0;
+            char[] animationChars = new char[]{'|', '/', '-', '\\'};
+
+            int bytesRead = 0;
+            byte[] buffer = new byte[1024];
             while ((bytesRead = inputStream.read(buffer)) != -1) {
+                downloadedFileSize += bytesRead;
                 outputStream.write(buffer, 0, bytesRead);
+                // calculate progress
+                final int currentProgress = (int) ((((double) downloadedFileSize) / ((double) completeFileSize)) * 100d);
+                System.out.print("Downloading: " + currentProgress + "% " + animationChars[currentProgress % 4] + "\r");
             }
             outputStream.close();
             inputStream.close();
@@ -99,24 +108,15 @@ public class Downloader {
         }
     }
 
-    private StringBuilder downloadHtmlFile(URL url, File file) throws IOException {
-        BufferedReader readr =
-                new BufferedReader(new InputStreamReader(url.openStream()));
-
-        // Enter filename in which you want to download
+    private Set<String> downloadHtmlFileAndGetUrlSet(URL url, File file) throws IOException {
+        Document document = Jsoup.connect(url.toString()).get();
+        var urlSetInHtmlFile = this.parseHtmlFileForTags(document);
+        StringBuilder sb = new StringBuilder(document.toString());
         BufferedWriter writer =
                 new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
-
-        // read each line from stream till end
-        String line;
-        StringBuilder sb = new StringBuilder();
-        while ((line = readr.readLine()) != null) {
-            sb.append(line);
-            writer.write(line);
-        }
-        readr.close();
+        writer.write(sb.toString());
         writer.close();
-        return sb;
+        return urlSetInHtmlFile;
     }
 
     private File getNewFileToSave(String directoryPath, String fileName) {
@@ -139,47 +139,17 @@ public class Downloader {
         return !extension.isEmpty() ? url.getPath().substring(0, url.getPath().lastIndexOf("/")) : url.getPath();
     }
 
-    private Set<String> parseHtmlFileForTags(StringBuilder sb) {
+    private Set<String> parseHtmlFileForTags(Document document) {
         Set<String> urlSet = new HashSet<>();
-        Pattern pattern = Pattern.compile("^(?:[a-z]+:)?//");
-
-        Document document = Jsoup.parse(sb.toString());
         Elements imageTags = document.select("img");
         Elements anchorTags = document.select("a");
+        Elements linkTags = document.select("link");
+        Elements scriptTags = document.select("script");
 
-        anchorTags.stream().map((link) -> link.attr("href")).forEachOrdered((this_url) -> {
-            if (!this_url.isEmpty() && this_url.indexOf("mailto") == -1 && this_url.indexOf("tel:") == -1) {
-                if (isAbsoluteUrl(this_url)) {
-                    if (this_url.indexOf(this.hostName) != -1)
-                        if (!this.globalUrlSet.contains(this_url)) {
-                            urlSet.add(this_url);
-                            this.globalUrlSet.add(this_url);
-                        }
-                } else {
-                    if (!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))) {
-                        urlSet.add(this.getAbsoluteUrl(this_url));
-                        this.globalUrlSet.add(this.getAbsoluteUrl(this_url));
-                    }
-                }
-            }
-        });
-
-        imageTags.stream().map((link) -> link.attr("src")).forEachOrdered((this_url) -> {
-            if (!this_url.isEmpty()) {
-                if (isAbsoluteUrl(this_url)) {
-                    if (this_url.indexOf(this.hostName) != -1)
-                        if (!this.globalUrlSet.contains(this_url)) {
-                            urlSet.add(this_url);
-                            this.globalUrlSet.add(this_url);
-                        }
-                } else {
-                    if (!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))) {
-                        urlSet.add(this.getAbsoluteUrl(this_url));
-                        this.globalUrlSet.add(this.getAbsoluteUrl(this_url));
-                    }
-                }
-            }
-        });
+        this.processHtmlTagLinks(urlSet,anchorTags,"href");
+        this.processHtmlTagLinks(urlSet,imageTags,"src");
+        this.processHtmlTagLinks(urlSet,linkTags,"href");
+        this.processHtmlTagLinks(urlSet,scriptTags,"src");
 
         return urlSet;
     }
@@ -191,5 +161,30 @@ public class Downloader {
 
     private String getAbsoluteUrl(String url) {
         return this.hostName + url.replaceFirst("^/", "");
+    }
+
+    private void processHtmlTagLinks(Set<String> urlSet, Elements elements, String elementLinkAttribute) {
+        for (Element link : elements) {
+            var this_url = link.attr(elementLinkAttribute);
+            if (!this_url.isEmpty() && this_url.indexOf("mailto") == -1 && this_url.indexOf("tel:") == -1 && !this_url.startsWith("#")) {
+                if (isAbsoluteUrl(this_url)) {
+                    if (this_url.indexOf(this.hostName) != -1) {
+                        if (!this.globalUrlSet.contains(this_url)) {
+                            urlSet.add(this_url);
+                            this.globalUrlSet.add(this_url);
+                        }
+                        var modifiedUrl = this.fileUtil.getCompleteFileSavePath(this_url);
+                        link.attr(elementLinkAttribute, modifiedUrl);
+                    }
+                } else {
+                    if (!this.globalUrlSet.contains(this.getAbsoluteUrl(this_url))) {
+                        urlSet.add(this.getAbsoluteUrl(this_url));
+                        this.globalUrlSet.add(this.getAbsoluteUrl(this_url));
+                    }
+                    var modifiedUrl = this.fileUtil.getCompleteFileSavePath(this_url);
+                    link.attr(elementLinkAttribute, modifiedUrl);
+                }
+            }
+        }
     }
 }
