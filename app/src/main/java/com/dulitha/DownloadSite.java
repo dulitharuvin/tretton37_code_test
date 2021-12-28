@@ -49,7 +49,7 @@ public class DownloadSite {
     private static String getDownloadDirectory(){
         String currentDirectory = System.getProperty("user.dir");
         Scanner userInput = new Scanner(System.in);
-        System.out.print("Enter directory to download tretton37.com : ");
+        System.out.print("Enter directory to download tretton37.com (Leave blank to select current directory) : ");
         String directoryToDownload = userInput.nextLine();
 
         if(directoryToDownload.trim().isEmpty()){
