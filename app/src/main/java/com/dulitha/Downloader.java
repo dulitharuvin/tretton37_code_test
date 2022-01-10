@@ -91,7 +91,7 @@ public class Downloader {
             long downloadedFileSize = 0;
 
             int bytesRead = 0;
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[BUFFER_SIZE];
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 downloadedFileSize += bytesRead;
                 outputStream.write(buffer, 0, bytesRead);

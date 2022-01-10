@@ -16,6 +16,7 @@ ___
 ####How to retrieve code , build and run
 ___
 + Clone the repository to your local machine from this github repo ( https://github.com/dulitharuvin/tretton37_code_test ), use the master branch 
++ Make sure Java runtime is available in the machine, JDK 8.0 or higher is required.
 + navigate to the root directory of the cloned repo using the terminal/command prompt
 + run following commands depending on your OS
   + Mac OS
